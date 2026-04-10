@@ -21,16 +21,24 @@ from datetime import datetime
 
 
 def cmd_price(args):
-    """Lấy giá cổ phiếu lịch sử."""
+    """Lấy giá cổ phiếu lịch sử hoặc intraday."""
     from vnstock import Quote
     
-    quote = Quote(symbol=args.symbol, source=args.source)
+    def fetch_data(source):
+        quote = Quote(symbol=args.symbol, source=source)
+        if args.intraday:
+            return quote.intraday(page_size=args.page_size)
+        if args.start:
+            return quote.history(start=args.start, end=args.end or datetime.now().strftime('%Y-%m-%d'), interval=args.interval)
+        return quote.history(length=args.period, interval=args.interval)
+
+    df = fetch_data(args.source)
     
-    if args.start:
-        df = quote.history(start=args.start, end=args.end or datetime.now().strftime('%Y-%m-%d'), interval=args.interval)
-    else:
-        df = quote.history(length=args.period, interval=args.interval)
-    
+    # Fallback to VCI if KBS fails and user didn't explicitly request VCI
+    if (df is None or len(df) == 0) and args.source == 'KBS':
+        print(f"⚠️ KBS không có dữ liệu cho {args.symbol}, đang thử lại với VCI...")
+        df = fetch_data('VCI')
+
     if df is None or len(df) == 0:
         print(f"❌ Không có dữ liệu cho {args.symbol}")
         return
@@ -40,45 +48,64 @@ def cmd_price(args):
     elif args.format == 'csv':
         print(df.to_csv(index=False))
     else:
-        print(f"\n📊 Giá lịch sử {args.symbol} ({args.period or f'{args.start} → {args.end}'}):")
+        label = "Giá nội ngày" if args.intraday else f"Giá lịch sử ({args.period or f'{args.start} → {args.end}'})"
+        print(f"\n📊 {label} {args.symbol}:")
         print(f"{'─' * 80}")
-        cols = ['time', 'open', 'high', 'low', 'close', 'volume']
+        
+        # Determine columns to show
+        if args.intraday:
+            cols = ['time', 'price', 'volume', 'match_type']
+        else:
+            cols = ['time', 'open', 'high', 'low', 'close', 'volume']
+        
+        cols = [c for c in cols if c in df.columns]
+        
         if args.tail:
             print(df[cols].tail(args.tail).to_string(index=False))
         else:
             print(df[cols].to_string(index=False))
         
-        # Summary stats
-        print(f"\n📈 Tóm tắt:")
-        print(f"  Giá đóng cửa gần nhất: {df['close'].iloc[-1]:,.0f}")
-        print(f"  Giá cao nhất: {df['high'].max():,.0f}")
-        print(f"  Giá thấp nhất: {df['low'].min():,.0f}")
-        print(f"  KL trung bình: {df['volume'].mean():,.0f}")
-        if len(df) > 1:
-            change = ((df['close'].iloc[-1] / df['close'].iloc[0]) - 1) * 100
-            print(f"  Thay đổi kỳ: {change:+.2f}%")
+        if not args.intraday:
+            # Summary stats
+            print(f"\n📈 Tóm tắt:")
+            if 'close' in df.columns:
+                print(f"  Giá đóng cửa gần nhất: {df['close'].iloc[-1]:,.0f}")
+                if len(df) > 1:
+                    change = ((df['close'].iloc[-1] / df['close'].iloc[0]) - 1) * 100
+                    print(f"  Thay đổi kỳ: {change:+.2f}%")
+            if 'high' in df.columns: print(f"  Giá cao nhất: {df['high'].max():,.0f}")
+            if 'low' in df.columns: print(f"  Giá thấp nhất: {df['low'].min():,.0f}")
+            if 'volume' in df.columns: print(f"  KL trung bình: {df['volume'].mean():,.0f}")
 
 
 def cmd_finance(args):
     """Lấy báo cáo tài chính."""
     from vnstock import Finance
     
-    finance = Finance(symbol=args.symbol, source=args.source)
+    def fetch_data(source):
+        finance = Finance(symbol=args.symbol, source=source)
+        report_map = {
+            'income': finance.income_statement,
+            'balance': finance.balance_sheet,
+            'cashflow': finance.cash_flow,
+            'ratio': finance.ratio,
+        }
+        func = report_map.get(args.report)
+        if not func: return None
+        
+        # Support display_mode for version 3.4.0+
+        try:
+            return func(period=args.period, display_mode=args.display_mode)
+        except TypeError:
+            # Fallback if display_mode is not supported by the function/version
+            return func(period=args.period)
+
+    df = fetch_data(args.source)
     
-    report_map = {
-        'income': finance.income_statement,
-        'balance': finance.balance_sheet,
-        'cashflow': finance.cash_flow,
-        'ratio': finance.ratio,
-    }
-    
-    func = report_map.get(args.report)
-    if not func:
-        print(f"❌ Loại báo cáo không hợp lệ: {args.report}")
-        print(f"  Chọn: income, balance, cashflow, ratio")
-        return
-    
-    df = func(period=args.period)
+    # Fallback to VCI
+    if (df is None or len(df) == 0) and args.source == 'KBS':
+        print(f"⚠️ KBS không có dữ liệu tài chính cho {args.symbol}, đang thử lại với VCI...")
+        df = fetch_data('VCI')
     
     if df is None or len(df) == 0:
         print(f"❌ Không có dữ liệu tài chính cho {args.symbol}")
@@ -95,15 +122,20 @@ def cmd_finance(args):
             'cashflow': 'Lưu chuyển tiền tệ',
             'ratio': 'Chỉ số tài chính',
         }
-        print(f"\n💰 {report_names[args.report]} - {args.symbol} ({args.period}):")
+        print(f"\n💰 {report_names[args.report]} - {args.symbol} ({args.period}, mode: {args.display_mode}):")
         print(f"{'─' * 80}")
         
-        if args.key_only:
+        if args.key_only and 'levels' in df.columns:
             df = df[df['levels'] == 1]
         
         # Show main columns
-        period_cols = [c for c in df.columns if 'Q' in c or c.isdigit()][:4]
+        # Period columns usually contain Q or are years
+        period_cols = [c for c in df.columns if 'Q' in str(c) or str(c).isdigit()][:4]
         show_cols = ['item', 'item_id'] + period_cols
+        # If VCI, it uses different names like ticker, yearReport, etc.
+        if 'ticker' in df.columns:
+             show_cols = [c for c in df.columns if c not in ['ticker']]
+             
         show_cols = [c for c in show_cols if c in df.columns]
         print(df[show_cols].to_string(index=False))
 
@@ -112,29 +144,28 @@ def cmd_company(args):
     """Lấy thông tin công ty."""
     from vnstock import Company
     
-    company = Company(source=args.source, symbol=args.symbol)
+    def fetch_data(source):
+        company = Company(source=source, symbol=args.symbol)
+        info_map = {
+            'overview': company.overview,
+            'shareholders': company.shareholders,
+            'officers': company.officers,
+            'news': company.news,
+            'events': company.events,
+            'subsidiaries': company.subsidiaries,
+            'affiliate': company.affiliate,
+        }
+        func = info_map.get(args.info)
+        if not func: return None
+        return func()
+
+    df = fetch_data(args.source)
     
-    info_map = {
-        'overview': company.overview,
-        'shareholders': company.shareholders,
-        'officers': company.officers,
-        'news': company.news,
-        'events': company.events,
-        'subsidiaries': company.subsidiaries,
-    }
-    
-    func = info_map.get(args.info)
-    if not func:
-        print(f"❌ Loại thông tin không hợp lệ: {args.info}")
-        print(f"  Chọn: overview, shareholders, officers, news, events, subsidiaries")
-        return
-    
-    try:
-        df = func()
-    except Exception as e:
-        print(f"❌ Lỗi khi lấy {args.info} cho {args.symbol}: {e}")
-        return
-    
+    # Fallback to VCI
+    if (df is None or len(df) == 0) and args.source == 'KBS':
+        print(f"⚠️ KBS không có dữ liệu {args.info} cho {args.symbol}, đang thử lại với VCI...")
+        df = fetch_data('VCI')
+        
     if df is None or len(df) == 0:
         print(f"⚠️ Không có dữ liệu {args.info} cho {args.symbol}")
         return
@@ -149,8 +180,9 @@ def cmd_company(args):
             'shareholders': 'Cổ đông lớn',
             'officers': 'Ban lãnh đạo',
             'news': 'Tin tức',
-            'events': 'Sự ki\u1ec7n',
+            'events': 'Sự kiện',
             'subsidiaries': 'Công ty con',
+            'affiliate': 'Công ty liên kết',
         }
         print(f"\n🏢 {info_names[args.info]} - {args.symbol}:")
         print(f"{'─' * 80}")
@@ -161,20 +193,27 @@ def cmd_listing(args):
     """Lấy danh sách chứng khoán."""
     from vnstock import Listing
     
-    listing = Listing(source=args.source)
+    def fetch_data(source):
+        listing = Listing(source=source)
+        if args.group:
+            return listing.symbols_by_group(group_name=args.group, to_df=True)
+        elif args.exchange:
+            return listing.symbols_by_exchange(exchange=args.exchange, to_df=True)
+        elif args.industry:
+            return listing.symbols_by_industries(industry_name=args.industry, to_df=True)
+        elif args.indices:
+            if args.indices_group:
+                return listing.indices_by_group(group_name=args.indices_group)
+            return listing.all_indices()
+        else:
+            return listing.all_symbols(to_df=True)
+
+    df = fetch_data(args.source)
     
-    if args.group:
-        df = listing.symbols_by_group(group_name=args.group, to_df=True)
-        label = f"Nhóm {args.group}"
-    elif args.exchange:
-        df = listing.symbols_by_exchange(exchange=args.exchange, to_df=True)
-        label = f"Sàn {args.exchange}"
-    elif args.industry:
-        df = listing.symbols_by_industries(industry_name=args.industry, to_df=True)
-        label = f"Ngành {args.industry}"
-    else:
-        df = listing.all_symbols(to_df=True)
-        label = "Tất cả mã CK"
+    # Fallback to VCI
+    if (df is None or len(df) == 0) and args.source == 'KBS':
+        # Don't print warning for listing as it might be common if group is empty in KBS
+        df = fetch_data('VCI')
     
     if df is None or len(df) == 0:
         print(f"❌ Không tìm thấy mã CK")
@@ -185,7 +224,13 @@ def cmd_listing(args):
     elif args.format == 'csv':
         print(df.to_csv(index=False))
     else:
-        print(f"\n📋 {label}: {len(df)} mã")
+        label = "Danh sách mã CK"
+        if args.group: label = f"Nhóm {args.group}"
+        if args.exchange: label = f"Sàn {args.exchange}"
+        if args.industry: label = f"Ngành {args.industry}"
+        if args.indices: label = "Danh sách chỉ số"
+        
+        print(f"\n📋 {label}: {len(df)} bản ghi")
         print(f"{'─' * 60}")
         print(df.to_string(index=False))
 
@@ -194,8 +239,15 @@ def cmd_board(args):
     """Lấy bảng giá realtime."""
     from vnstock import Trading
     
-    trading = Trading(source=args.source, symbol=args.symbols[0])
-    board = trading.price_board(symbols_list=args.symbols)
+    def fetch_data(source):
+        trading = Trading(source=source, symbol=args.symbols[0])
+        return trading.price_board(symbols_list=args.symbols)
+
+    board = fetch_data(args.source)
+    
+    # Fallback to VCI
+    if (board is None or len(board) == 0) and args.source == 'KBS':
+        board = fetch_data('VCI')
     
     if board is None or len(board) == 0:
         print("❌ Không có dữ liệu bảng giá")
@@ -206,7 +258,7 @@ def cmd_board(args):
     elif args.format == 'csv':
         print(board.to_csv(index=False))
     else:
-        print(f"\n📊 Bảng giá realtime:")
+        print(f"\n📊 Bảng giá realtime (source: {args.source}):")
         print(f"{'─' * 80}")
         cols = ['symbol', 'reference_price', 'close_price', 'price_change', 'percent_change', 'volume_accumulated']
         show_cols = [c for c in cols if c in board.columns]
@@ -287,12 +339,14 @@ def main():
     subparsers = parser.add_subparsers(dest='command', help='Lệnh')
     
     # Price
-    p_price = subparsers.add_parser('price', help='Giá cổ phiếu lịch sử')
+    p_price = subparsers.add_parser('price', help='Giá cổ phiếu lịch sử hoặc nội ngày')
     p_price.add_argument('symbol', help='Mã CK (VD: VCB)')
     p_price.add_argument('--period', default='3M', help='Khoảng thời gian (1M/3M/6M/1Y/2Y/100b)')
     p_price.add_argument('--start', help='Ngày bắt đầu (YYYY-MM-DD)')
     p_price.add_argument('--end', help='Ngày kết thúc (YYYY-MM-DD)')
     p_price.add_argument('--interval', default='1D', help='Interval (1m/5m/15m/30m/1H/1D/1W/1M)')
+    p_price.add_argument('--intraday', action='store_true', help='Lấy giá nội ngày (realtime ticks)')
+    p_price.add_argument('--page-size', type=int, default=100, help='Số lượng bản ghi intraday')
     p_price.add_argument('--tail', type=int, help='Chỉ hiển thị N dòng cuối')
     
     # Finance
@@ -300,19 +354,22 @@ def main():
     p_fin.add_argument('symbol', help='Mã CK')
     p_fin.add_argument('--report', default='ratio', choices=['income', 'balance', 'cashflow', 'ratio'])
     p_fin.add_argument('--period', default='quarter', choices=['quarter', 'year'])
-    p_fin.add_argument('--key-only', action='store_true', help='Chỉ hiển thị chỉ tiêu chính')
+    p_fin.add_argument('--display-mode', default='std', choices=['std', 'all', 'auto', 'vi', 'en'], help='Chế độ hiển thị trường dữ liệu (v3.4+)')
+    p_fin.add_argument('--key-only', action='store_true', help='Chỉ hiển thị chỉ tiêu chính (KBS level 1)')
     
     # Company
     p_comp = subparsers.add_parser('company', help='Thông tin công ty')
     p_comp.add_argument('symbol', help='Mã CK')
     p_comp.add_argument('--info', default='overview', 
-                        choices=['overview', 'shareholders', 'officers', 'news', 'events', 'subsidiaries'])
+                        choices=['overview', 'shareholders', 'officers', 'news', 'events', 'subsidiaries', 'affiliate'])
     
     # Listing
-    p_list = subparsers.add_parser('listing', help='Danh sách mã CK')
+    p_list = subparsers.add_parser('listing', help='Danh sách mã CK & Chỉ số')
     p_list.add_argument('--group', help='Nhóm chỉ số (VN30/VN100/...)')
     p_list.add_argument('--exchange', help='Sàn (HOSE/HNX/UPCOM)')
     p_list.add_argument('--industry', help='Ngành')
+    p_list.add_argument('--indices', action='store_true', help='Liệt kê các chỉ số thị trường')
+    p_list.add_argument('--indices-group', help='Lọc chỉ số theo nhóm (HOSE Indices/Sector Indices/...)')
     
     # Board
     p_board = subparsers.add_parser('board', help='Bảng giá realtime')
