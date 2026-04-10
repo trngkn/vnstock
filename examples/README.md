@@ -56,31 +56,49 @@ print(result_df.head(5).to_string(index=False))
 ```python
 from vnstock import Listing
 listing = Listing(source='KBS')
-vn30 = listing.symbols_by_group(group_name='VN30', to_df=False)
+vn30 = listing.symbols_by_group(group_name='VN30', to_df=False).tolist()
 print(f"VN30 ({len(vn30)} mã): {', '.join(vn30)}")
 ```
 
-### 5. CLI Usage
+### 5. Giá nội ngày (Intraday)
+
+```python
+from vnstock import Quote
+quote = Quote(symbol='FPT', source='KBS')
+intraday = quote.intraday(page_size=50)
+print("Dữ liệu khớp lệnh 50 phiên gần nhất:")
+print(intraday[['time', 'price', 'volume', 'match_type']].head())
+```
+
+### 6. CLI Usage
+
+Skill hỗ trợ một CLI wrapper mạnh mẽ (`scripts/vnstock_cli.py`) với cơ chế **tự động fallback** từ KBS sang VCI nếu dữ liệu trống.
 
 ```bash
-# Giá cổ phiếu
+# 1. Giá cổ phiếu (Mặc định 3 tháng gần nhất)
 python scripts/vnstock_cli.py price VCB --period 1Y --tail 10
+# Lấy giá nội ngày (ticks)
+python scripts/vnstock_cli.py price VCB --intraday --page-size 50
 
-# Bảng giá realtime
+# 2. Bảng giá realtime (Nhiều mã)
 python scripts/vnstock_cli.py board VCB ACB TCB FPT VNM
 
-# Báo cáo tài chính
-python scripts/vnstock_cli.py finance VCB --report income --period quarter --key-only
+# 3. Báo cáo tài chính
+# Mặc định lấy chỉ số tài chính (ratio), hỗ trợ display-mode cho vnstock 3.4+
+python scripts/vnstock_cli.py finance VCB --report income --display-mode all
+# Chỉ lấy các chỉ tiêu chính (KBS level 1)
+python scripts/vnstock_cli.py finance VCB --report balance --key-only
 
-# Giá vàng
+# 4. Thông tin công ty & Niêm yết
+python scripts/vnstock_cli.py company VCB --info overview
+python scripts/vnstock_cli.py company VCB --info affiliate  # Công ty liên kết
+python scripts/vnstock_cli.py listing --indices             # Các chỉ số thị trường
+
+# 5. Tiện ích: Vàng, Tỷ giá, Quỹ mở
 python scripts/vnstock_cli.py gold
-
-# Tỷ giá
 python scripts/vnstock_cli.py fx --currency USD
-
-# Quỹ đầu tư
 python scripts/vnstock_cli.py fund --type STOCK --top 5
 
-# Output JSON (cho pipe/automation)
+# 6. Định dạng đầu ra (Table, JSON, CSV)
 python scripts/vnstock_cli.py price VCB --format json > vcb_price.json
 ```
