@@ -19,6 +19,15 @@ import argparse
 import json
 from datetime import datetime
 
+# Reconfigure stdout to use UTF-8 to handle emojis and special characters on Windows
+if sys.stdout.encoding.lower() != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except AttributeError:
+        # Fallback for Python versions < 3.7 (though vnstock requires newer)
+        import codecs
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
+
 
 def cmd_price(args):
     """Lấy giá cổ phiếu lịch sử hoặc intraday."""
