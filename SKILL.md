@@ -37,7 +37,7 @@ Nếu chưa cài, hãy chạy lệnh trên trước.
 from vnstock import register_user
 register_user()                              # Nhập key theo hướng dẫn
 # hoặc
-register_user(api_key='vnstock_YOUR_KEY')     # Nhập trực tiếp
+register_user(api_key='vnstock_59d75e4db410c618ddce96b2e2698951')     # Nhập trực tiếp
 ```
 
 ---
@@ -47,7 +47,8 @@ register_user(api_key='vnstock_YOUR_KEY')     # Nhập trực tiếp
 ### Thư viện chính: `vnstock`
 - **Miễn phí & mã nguồn mở**
 - **Dữ liệu**: Cổ phiếu, chỉ số, quỹ, trái phiếu, FX, vàng, crypto
-- **Nguồn dữ liệu khuyến nghị**: `KBS` (ổn định nhất) hoặc `VCI` (đầy đủ nhất)
+- **Nguồn dữ liệu**:Ưu tiên `KBS` (ổn định nhất, khuyến nghị mặc định) hoặc `VCI` (fallback hoặc khi cần dữ liệu ICB chi tiết).
+- **CƠ CHẾ FALLBACK**: Hầu hết các module hỗ trợ ưu tiên `KBS`. Nếu `KBS` không trả về dữ liệu hoặc gặp lỗi, hệ thống sẽ tự động thử lại với `VCI`.
 - ⚠️ **KHÔNG sử dụng nguồn TCBS** (đã deprecated)
 
 ### Các class chính
@@ -105,6 +106,9 @@ vn100 = listing.symbols_by_group(group_name='VN100', to_df=True)
 # Chỉ số đầu tư: VNDIAMOND, VNFINLEAD, VNFINSELECT
 # Chỉ số liên sàn: VNX50, VNXALL
 
+# Phân loại ICB (Chỉ VCI)
+icb = listing.industries_icb()
+
 # Futures, Bonds, Warrants
 futures = listing.all_future_indices()
 gov_bonds = listing.all_government_bonds()
@@ -114,8 +118,9 @@ corp_bonds = listing.all_bonds()
 # ETF (chỉ KBS)
 etf = listing.all_etf()
 
-# Tất cả chỉ số thị trường
+# Tất cả chỉ số thị trường và nhóm chỉ số
 all_indices = listing.all_indices()
+hose_indices = listing.indices_by_group('HOSE Indices') # Sector Indices, Investment Indices, VNX Indices
 ```
 
 ### 2. Quote API - Giá Cổ Phiếu
@@ -179,8 +184,11 @@ shareholders = company.shareholders()
 officers = company.officers()
 # ['from_date', 'position', 'name', 'position_en', 'owner_code']
 
-# Công ty con
+# Công ty con (Chỉ KBS tốt nhất)
 subsidiaries = company.subsidiaries()
+
+# Công ty liên kết
+affiliate = company.affiliate()
 
 # Tin tức
 news = company.news()
@@ -188,7 +196,7 @@ news = company.news()
 
 # Sự kiện (cổ tức, phát hành cổ phiếu...)
 events = company.events()
-# ⚠️ KBS có thể rỗng, nên dùng VCI cho events
+# ⚠️ KBS có thể rỗng, nên dùng VCI cho events (tự động fallback nếu dùng CLI helper)
 
 # === Methods chỉ KBS ===
 ownership = company.ownership()           # Cơ cấu cổ đông theo tỷ lệ
@@ -338,6 +346,16 @@ from vnstock.constants import INDICES_INFO, INDEX_GROUPS, SECTOR_IDS, EXCHANGES
 # Sàn giao dịch
 # EXCHANGES = {'HOSE': '...', 'HNX': '...', 'UPCOM': '...'}
 ```
+
+### 9. CLI Helper - Truy vấn nhanh cực mạnh
+
+Skill này cung cấp một CLI wrapper tích hợp sẵn cơ chế ưu tiên `KBS` và fallback `VCI` tự động:
+- `python vnstock_cli.py price VCB --period 3M` (Lấy giá)
+- `python vnstock_cli.py price VCB --intraday` (Giá nội ngày realtime)
+- `python vnstock_cli.py finance VCB --report income --period quarter` (BCTC)
+- `python vnstock_cli.py company VCB --info overview` (Thông tin DN)
+- `python vnstock_cli.py listing --indices` (Danh sách chỉ số thị trường)
+- `python vnstock_cli.py board VCB ACB` (Bảng giá nhanh)
 
 ---
 
@@ -499,10 +517,11 @@ if fx is not None:
 
 ### PHẢI làm:
 1. **Luôn dùng try/except** khi gọi API để xử lý lỗi mạng, rate limit
-2. **Ưu tiên source KBS** - ổn định hơn, hoạt động tốt trên mọi môi trường
-3. **Kiểm tra kết quả rỗng** trước khi xử lý (df is None or len(df) == 0)
-4. **Giải thích kết quả** bằng ngôn ngữ dễ hiểu cho người dùng
-5. **Ghi rõ đơn vị** tiền tệ (VND), phần trăm (%), khối lượng (shares)
+2. **ƯU TIÊN NGUỒN KBS**: Đây là nguồn khuyến nghị chính. Chỉ dùng `VCI` làm fallback hoặc khi cần dữ liệu đặc thù.
+3. **Sử dụng CLI Helper**: Tận dụng `scripts/vnstock_cli.py` vì nó đã cài sẵn logic fallback KBS -> VCI.
+4. **Kiểm tra kết quả rỗng** trước khi xử lý (df is None or len(df) == 0)
+5. **Giải thích kết quả** bằng ngôn ngữ dễ hiểu cho người dùng
+6. **Ghi rõ đơn vị** tiền tệ (VND), phần trăm (%), khối lượng (shares)
 
 ### KHÔNG ĐƯỢC làm:
 1. ❌ **KHÔNG đưa lời khuyên đầu tư** - vnstock chỉ là công cụ dữ liệu
