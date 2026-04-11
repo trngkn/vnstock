@@ -350,12 +350,12 @@ from vnstock.constants import INDICES_INFO, INDEX_GROUPS, SECTOR_IDS, EXCHANGES
 ### 9. CLI Helper - Truy vấn nhanh cực mạnh
 
 Skill này cung cấp một CLI wrapper tích hợp sẵn cơ chế ưu tiên `KBS` và fallback `VCI` tự động:
-- `python vnstock_cli.py price VCB --period 3M` (Lấy giá)
-- `python vnstock_cli.py price VCB --intraday` (Giá nội ngày realtime)
-- `python vnstock_cli.py finance VCB --report income --period quarter` (BCTC)
-- `python vnstock_cli.py company VCB --info overview` (Thông tin DN)
-- `python vnstock_cli.py listing --indices` (Danh sách chỉ số thị trường)
-- `python vnstock_cli.py board VCB ACB` (Bảng giá nhanh)
+- `python3 scripts/vnstock_cli.py price VCB --period 3M` (Lấy giá)
+- `python3 scripts/vnstock_cli.py price VCB --intraday` (Giá nội ngày realtime)
+- `python3 scripts/vnstock_cli.py finance VCB --report income --period quarter` (BCTC)
+- `python3 scripts/vnstock_cli.py company VCB --info overview` (Thông tin DN)
+- `python3 scripts/vnstock_cli.py listing --indices` (Danh sách chỉ số thị trường)
+- `python3 scripts/vnstock_cli.py board VCB ACB` (Bảng giá nhanh)
 
 ---
 
@@ -369,41 +369,41 @@ Skill này cung cấp một CLI wrapper tích hợp sẵn cơ chế ưu tiên `K
 
 ```bash
 # === GIÁ CỔ PHIẾU ===
-python scripts/vnstock_cli.py price VCB --period 3M           # Giá 3 tháng
-python scripts/vnstock_cli.py price VCB --period 1Y --tail 10 # 10 dòng cuối năm
-python scripts/vnstock_cli.py price VCB --intraday            # Giá realtime nội ngày
-python scripts/vnstock_cli.py price VCB --start 2024-01-01 --end 2024-12-31
+python3 scripts/vnstock_cli.py price VCB --period 3M           # Giá 3 tháng
+python3 scripts/vnstock_cli.py price VCB --period 1Y --tail 10 # 10 dòng cuối năm
+python3 scripts/vnstock_cli.py price VCB --intraday            # Giá realtime nội ngày
+python3 scripts/vnstock_cli.py price VCB --start 2024-01-01 --end 2024-12-31
 
 # === BẢNG GIÁ REALTIME ===
-python scripts/vnstock_cli.py board VCB ACB TCB BID CTG       # Nhiều mã cùng lúc
+python3 scripts/vnstock_cli.py board VCB ACB TCB BID CTG       # Nhiều mã cùng lúc
 
 # === BÁO CÁO TÀI CHÍNH ===
-python scripts/vnstock_cli.py finance VCB --report ratio      # Chỉ số tài chính (mặc định)
-python scripts/vnstock_cli.py finance VCB --report income     # Kết quả kinh doanh
-python scripts/vnstock_cli.py finance VCB --report balance --key-only  # Bảng cân đối (chỉ tiêu chính)
-python scripts/vnstock_cli.py finance VCB --report cashflow   # Lưu chuyển tiền tệ
+python3 scripts/vnstock_cli.py finance VCB --report ratio      # Chỉ số tài chính (mặc định)
+python3 scripts/vnstock_cli.py finance VCB --report income     # Kết quả kinh doanh
+python3 scripts/vnstock_cli.py finance VCB --report balance --key-only  # Bảng cân đối (chỉ tiêu chính)
+python3 scripts/vnstock_cli.py finance VCB --report cashflow   # Lưu chuyển tiền tệ
 
 # === THÔNG TIN CÔNG TY ===
-python scripts/vnstock_cli.py company VCB --info overview     # Thông tin tổng quan
-python scripts/vnstock_cli.py company VCB --info shareholders # Cổ đông lớn
-python scripts/vnstock_cli.py company VCB --info officers     # Ban lãnh đạo
-python scripts/vnstock_cli.py company VCB --info news         # Tin tức
-python scripts/vnstock_cli.py company VCB --info events       # Sự kiện
+python3 scripts/vnstock_cli.py company VCB --info overview     # Thông tin tổng quan
+python3 scripts/vnstock_cli.py company VCB --info shareholders # Cổ đông lớn
+python3 scripts/vnstock_cli.py company VCB --info officers     # Ban lãnh đạo
+python3 scripts/vnstock_cli.py company VCB --info news         # Tin tức
+python3 scripts/vnstock_cli.py company VCB --info events       # Sự kiện
 
 # === DANH SÁCH & CHỈ SỐ ===
-python scripts/vnstock_cli.py listing --group VN30            # Mã trong VN30
-python scripts/vnstock_cli.py listing --exchange HOSE         # Mã sàn HOSE
-python scripts/vnstock_cli.py listing --industry Ngân hàng    # Mã ngành ngân hàng
-python scripts/vnstock_cli.py listing --indices               # Tất cả chỉ số thị trường
+python3 scripts/vnstock_cli.py listing --group VN30            # Mã trong VN30
+python3 scripts/vnstock_cli.py listing --exchange HOSE         # Mã sàn HOSE
+python3 scripts/vnstock_cli.py listing --industry Ngân hàng    # Mã ngành ngân hàng
+python3 scripts/vnstock_cli.py listing --indices               # Tất cả chỉ số thị trường
 
 # === TIỆN ÍKH ===
-python scripts/vnstock_cli.py gold                            # Giá vàng SJC
-python scripts/vnstock_cli.py fx --currency USD               # Tỷ giá USD
-python scripts/vnstock_cli.py fund --type STOCK --top 10     # Top 10 quỹ cổ phiếu
+python3 scripts/vnstock_cli.py gold                            # Giá vàng SJC
+python3 scripts/vnstock_cli.py fx --currency USD               # Tỷ giá USD
+python3 scripts/vnstock_cli.py fund --type STOCK --top 10     # Top 10 quỹ cổ phiếu
 
 # === ĐỊNH DẠNG ĐẦU RA ===
-python scripts/vnstock_cli.py price VCB --format json > output.json   # JSON file
-python scripts/vnstock_cli.py price VCB --format csv > output.csv     # CSV file
+python3 scripts/vnstock_cli.py price VCB --format json > output.json   # JSON file
+python3 scripts/vnstock_cli.py price VCB --format csv > output.csv     # CSV file
 ```
 
 #### Ưu điểm của CLI Script:
@@ -457,7 +457,7 @@ Sau khi có dữ liệu, agent nên:
 
 **⚡ Cách nhanh nhất - Dùng CLI:**
 ```bash
-python scripts/vnstock_cli.py price VCB --period 3M --tail 10
+python3 scripts/vnstock_cli.py price VCB --period 3M --tail 10
 ```
 
 **Python script (cho phân tích tùy chỉnh):**
@@ -476,8 +476,8 @@ print(f"Thay đổi so với 1 tháng trước: {((df['close'].iloc[-1] / df['cl
 
 **⚡ Cách nhanh nhất - Dùng CLI:**
 ```bash
-python scripts/vnstock_cli.py finance VCB --report ratio --key-only
-python scripts/vnstock_cli.py finance VCB --report income --key-only
+python3 scripts/vnstock_cli.py finance VCB --report ratio --key-only
+python3 scripts/vnstock_cli.py finance VCB --report income --key-only
 ```
 
 **Python script (cho phân tích tùy chỉnh):**
@@ -536,7 +536,7 @@ print(comparison.sort_values('ytd_return_%', ascending=False).to_string(index=Fa
 
 **⚡ Cách nhanh nhất - Dùng CLI:**
 ```bash
-python scripts/vnstock_cli.py board VCB ACB TCB BID CTG FPT VNM HPG MBB VPB
+python3 scripts/vnstock_cli.py board VCB ACB TCB BID CTG FPT VNM HPG MBB VPB
 ```
 
 **Python script:**
@@ -553,9 +553,9 @@ print(board[['symbol', 'reference_price', 'close_price', 'price_change', 'percen
 
 **⚡ Cách nhanh nhất - Dùng CLI:**
 ```bash
-python scripts/vnstock_cli.py company FPT --info overview
-python scripts/vnstock_cli.py company FPT --info shareholders
-python scripts/vnstock_cli.py company FPT --info officers
+python3 scripts/vnstock_cli.py company FPT --info overview
+python3 scripts/vnstock_cli.py company FPT --info shareholders
+python3 scripts/vnstock_cli.py company FPT --info officers
 ```
 
 **Python script:**
@@ -581,8 +581,8 @@ print(officers[['name', 'position']].head(5).to_string(index=False))
 
 **⚡ Cách nhanh nhất - Dùng CLI:**
 ```bash
-python scripts/vnstock_cli.py gold
-python scripts/vnstock_cli.py fx --currency USD
+python3 scripts/vnstock_cli.py gold
+python3 scripts/vnstock_cli.py fx --currency USD
 ```
 
 **Python script:**
