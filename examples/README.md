@@ -76,29 +76,29 @@ Skill hỗ trợ một CLI wrapper mạnh mẽ (`scripts/vnstock_cli.py`) với 
 
 ```bash
 # 1. Giá cổ phiếu (Mặc định 3 tháng gần nhất)
-python scripts/vnstock_cli.py price VCB --period 1Y --tail 10
+python3 scripts/vnstock_cli.py price VCB --period 1Y --tail 10
 # Lấy giá nội ngày (ticks)
-python scripts/vnstock_cli.py price VCB --intraday --page-size 50
+python3 scripts/vnstock_cli.py price VCB --intraday --page-size 50
 
 # 2. Bảng giá realtime (Nhiều mã)
-python scripts/vnstock_cli.py board VCB ACB TCB FPT VNM
+python3 scripts/vnstock_cli.py board VCB ACB TCB FPT VNM
 
 # 3. Báo cáo tài chính
 # Mặc định lấy chỉ số tài chính (ratio), hỗ trợ display-mode cho vnstock 3.4+
-python scripts/vnstock_cli.py finance VCB --report income --display-mode all
+python3 scripts/vnstock_cli.py finance VCB --report income --display-mode all
 # Chỉ lấy các chỉ tiêu chính (KBS level 1)
-python scripts/vnstock_cli.py finance VCB --report balance --key-only
+python3 scripts/vnstock_cli.py finance VCB --report balance --key-only
 
 # 4. Thông tin công ty & Niêm yết
-python scripts/vnstock_cli.py company VCB --info overview
-python scripts/vnstock_cli.py company VCB --info affiliate  # Công ty liên kết
-python scripts/vnstock_cli.py listing --indices             # Các chỉ số thị trường
+python3 scripts/vnstock_cli.py company VCB --info overview
+python3 scripts/vnstock_cli.py company VCB --info affiliate  # Công ty liên kết
+python3 scripts/vnstock_cli.py listing --indices             # Các chỉ số thị trường
 
 # 5. Tiện ích: Vàng, Tỷ giá, Quỹ mở
-python scripts/vnstock_cli.py gold
-python scripts/vnstock_cli.py fx --currency USD
-python scripts/vnstock_cli.py fund --type STOCK --top 5
+python3 scripts/vnstock_cli.py gold
+python3 scripts/vnstock_cli.py fx --currency USD
+python3 scripts/vnstock_cli.py fund --type STOCK --top 5
 
 # 6. Định dạng đầu ra (Table, JSON, CSV)
-python scripts/vnstock_cli.py price VCB --format json > vcb_price.json
+python3 scripts/vnstock_cli.py price VCB --format json > vcb_price.json
 ```
