@@ -361,6 +361,66 @@ Skill này cung cấp một CLI wrapper tích hợp sẵn cơ chế ưu tiên `K
 
 ## 🎯 Instructions - Quy Trình Xử Lý
 
+### ⚡ ƯU TIÊN 1: Sử dụng CLI Script có sẵn (NHANH NHẤT)
+
+**Skill này đã tích hợp sẵn CLI wrapper** tại `scripts/vnstock_cli.py` - đây là cách TRA CỨU NHANH nhất, không cần viết code.
+
+#### Các lệnh CLI phổ biến:
+
+```bash
+# === GIÁ CỔ PHIẾU ===
+python scripts/vnstock_cli.py price VCB --period 3M           # Giá 3 tháng
+python scripts/vnstock_cli.py price VCB --period 1Y --tail 10 # 10 dòng cuối năm
+python scripts/vnstock_cli.py price VCB --intraday            # Giá realtime nội ngày
+python scripts/vnstock_cli.py price VCB --start 2024-01-01 --end 2024-12-31
+
+# === BẢNG GIÁ REALTIME ===
+python scripts/vnstock_cli.py board VCB ACB TCB BID CTG       # Nhiều mã cùng lúc
+
+# === BÁO CÁO TÀI CHÍNH ===
+python scripts/vnstock_cli.py finance VCB --report ratio      # Chỉ số tài chính (mặc định)
+python scripts/vnstock_cli.py finance VCB --report income     # Kết quả kinh doanh
+python scripts/vnstock_cli.py finance VCB --report balance --key-only  # Bảng cân đối (chỉ tiêu chính)
+python scripts/vnstock_cli.py finance VCB --report cashflow   # Lưu chuyển tiền tệ
+
+# === THÔNG TIN CÔNG TY ===
+python scripts/vnstock_cli.py company VCB --info overview     # Thông tin tổng quan
+python scripts/vnstock_cli.py company VCB --info shareholders # Cổ đông lớn
+python scripts/vnstock_cli.py company VCB --info officers     # Ban lãnh đạo
+python scripts/vnstock_cli.py company VCB --info news         # Tin tức
+python scripts/vnstock_cli.py company VCB --info events       # Sự kiện
+
+# === DANH SÁCH & CHỈ SỐ ===
+python scripts/vnstock_cli.py listing --group VN30            # Mã trong VN30
+python scripts/vnstock_cli.py listing --exchange HOSE         # Mã sàn HOSE
+python scripts/vnstock_cli.py listing --industry Ngân hàng    # Mã ngành ngân hàng
+python scripts/vnstock_cli.py listing --indices               # Tất cả chỉ số thị trường
+
+# === TIỆN ÍKH ===
+python scripts/vnstock_cli.py gold                            # Giá vàng SJC
+python scripts/vnstock_cli.py fx --currency USD               # Tỷ giá USD
+python scripts/vnstock_cli.py fund --type STOCK --top 10     # Top 10 quỹ cổ phiếu
+
+# === ĐỊNH DẠNG ĐẦU RA ===
+python scripts/vnstock_cli.py price VCB --format json > output.json   # JSON file
+python scripts/vnstock_cli.py price VCB --format csv > output.csv     # CSV file
+```
+
+#### Ưu điểm của CLI Script:
+- ✅ **Không cần viết code** - chạy là có kết quả ngay
+- ✅ **Tự động fallback** KBS → VCI nếu nguồn chính không có dữ liệu
+- ✅ **Hỗ trợ nhiều định dạng**: table (mặc định), JSON, CSV
+- ✅ **Xử lý lỗi tự động** với thông báo rõ ràng
+- ✅ **Tối ưu cho tra cứu nhanh** và scripting
+
+#### Khi nào nên viết Python script thay vì dùng CLI:
+- Cần phân tích phức tạp, tính toán tùy chỉnh
+- Cần kết hợp nhiều API calls trong một logic
+- Cần visualization hoặc export đặc biệt
+- Cần batch processing số lượng lớn
+
+---
+
 ### Bước 1: Phân tích yêu cầu người dùng
 
 Khi người dùng hỏi về chứng khoán Việt Nam, xác định:
@@ -369,12 +429,11 @@ Khi người dùng hỏi về chứng khoán Việt Nam, xác định:
 3. **Khoảng thời gian** nếu có
 4. **Mức độ phân tích** (raw data vs đánh giá)
 
-### Bước 2: Viết script Python
+### Bước 2: Chọn phương pháp truy xuất
 
-Tạo script Python sử dụng vnstock API phù hợp. Luôn bao gồm:
-- Import statements chính xác
-- Error handling (try/except)
-- Output format rõ ràng (in kết quả hoặc lưu file)
+**Ưu tiên theo thứ tự:**
+1. **CLI Script** (`scripts/vnstock_cli.py`) - cho tra cứu nhanh, dữ liệu tiêu chuẩn
+2. **Python Script** - cho phân tích phức tạp, tính toán tùy chỉnh, kết hợp nhiều nguồn dữ liệu
 
 ### Bước 3: Chạy script
 
@@ -396,6 +455,12 @@ Sau khi có dữ liệu, agent nên:
 
 ### Tình huống 1: Lấy giá cổ phiếu
 
+**⚡ Cách nhanh nhất - Dùng CLI:**
+```bash
+python scripts/vnstock_cli.py price VCB --period 3M --tail 10
+```
+
+**Python script (cho phân tích tùy chỉnh):**
 ```python
 from vnstock import Quote
 
@@ -409,6 +474,13 @@ print(f"Thay đổi so với 1 tháng trước: {((df['close'].iloc[-1] / df['cl
 
 ### Tình huống 2: Phân tích tài chính
 
+**⚡ Cách nhanh nhất - Dùng CLI:**
+```bash
+python scripts/vnstock_cli.py finance VCB --report ratio --key-only
+python scripts/vnstock_cli.py finance VCB --report income --key-only
+```
+
+**Python script (cho phân tích tùy chỉnh):**
 ```python
 from vnstock import Finance
 
@@ -429,6 +501,7 @@ print(key_income[['item', 'item_id'] + [c for c in income.columns if 'Q' in c][:
 
 ### Tình huống 3: So sánh cổ phiếu
 
+**Python script (cần tính toán tùy chỉnh):**
 ```python
 from vnstock import Quote
 import pandas as pd
@@ -461,6 +534,12 @@ print(comparison.sort_values('ytd_return_%', ascending=False).to_string(index=Fa
 
 ### Tình huống 4: Bảng giá realtime
 
+**⚡ Cách nhanh nhất - Dùng CLI:**
+```bash
+python scripts/vnstock_cli.py board VCB ACB TCB BID CTG FPT VNM HPG MBB VPB
+```
+
+**Python script:**
 ```python
 from vnstock import Trading
 
@@ -472,6 +551,14 @@ print(board[['symbol', 'reference_price', 'close_price', 'price_change', 'percen
 
 ### Tình huống 5: Thông tin công ty
 
+**⚡ Cách nhanh nhất - Dùng CLI:**
+```bash
+python scripts/vnstock_cli.py company FPT --info overview
+python scripts/vnstock_cli.py company FPT --info shareholders
+python scripts/vnstock_cli.py company FPT --info officers
+```
+
+**Python script:**
 ```python
 from vnstock import Company
 
@@ -492,6 +579,13 @@ print(officers[['name', 'position']].head(5).to_string(index=False))
 
 ### Tình huống 6: Giá vàng & tỷ giá
 
+**⚡ Cách nhanh nhất - Dùng CLI:**
+```bash
+python scripts/vnstock_cli.py gold
+python scripts/vnstock_cli.py fx --currency USD
+```
+
+**Python script:**
 ```python
 from vnstock.explorer.misc import sjc_gold_price, vcb_exchange_rate
 
@@ -541,13 +635,15 @@ if fx is not None:
 
 ## 💡 Tips
 
-1. **Batch operations**: Lấy dữ liệu 1 lần, tái sử dụng nhiều lần
-2. **Giờ giao dịch VN**: 9:00-11:30 (sáng), 13:00-15:00 (chiều), UTC+7
-3. **Dữ liệu intraday**: Có sẵn đến trước 7:00 sáng ngày kế tiếp
-4. **Period format KBS**: '2025-Q3', '2025-Q2' (quý), '2025', '2024' (năm)
-5. **to_df=False** trả về Pandas Series, dùng `.tolist()` nếu cần list Python
-6. **Vnstock interface**: `stock = Vnstock().stock(symbol='VCB', source='KBS')` cho phân tích 1 mã xuyên suốt
-7. **CLI Helper**: Sử dụng `scripts/vnstock_cli.py` trong thư mục skill để truy vấn nhanh
+1. **⚡ ƯU TIÊN CLI SCRIPT**: Luôn thử `scripts/vnstock_cli.py` trước cho tra cứu nhanh - không cần viết code, có sẵn fallback logic
+2. **Batch operations**: Lấy dữ liệu 1 lần, tái sử dụng nhiều lần
+3. **Giờ giao dịch VN**: 9:00-11:30 (sáng), 13:00-15:00 (chiều), UTC+7
+4. **Dữ liệu intraday**: Có sẵn đến trước 7:00 sáng ngày kế tiếp
+5. **Period format KBS**: '2025-Q3', '2025-Q2' (quý), '2025', '2024' (năm)
+6. **to_df=False** trả về Pandas Series, dùng `.tolist()` nếu cần list Python
+7. **Vnstock interface**: `stock = Vnstock().stock(symbol='VCB', source='KBS')` cho phân tích 1 mã xuyên suốt
 8. **Network timeout**: API có thể chậm 5-15s, nên đặt timeout và retry hợp lý
 9. **FX data**: Dùng `Vnstock().fx(symbol='USDJPY', source='MSN')` cho dữ liệu ngoại hối quốc tế
 10. **Proxy support**: Finance/Quote hỗ trợ `proxy_mode='rotate'` cho cloud environments
+11. **CLI output formats**: Dùng `--format json` hoặc `--format csv` để export dễ dàng
+12. **CLI tail option**: Dùng `--tail 10` để chỉ xem N dòng cuối (tiện cho dữ liệu lớn)
